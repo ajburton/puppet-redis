@@ -11,87 +11,85 @@ class redis::server($ensure=present,
                     $aof_auto_rewrite_percentage=100,
                     $aof_auto_rewrite_min_size="64mb") {
 
-  $is_present = $ensure == "present"
-  $is_absent = $ensure == "absent"
-  $bin_dir = '/usr/local/bin'
-  $redis_home = "/var/lib/redis"
-  $redis_log = "/var/log/redis"
+  $is_present   = $ensure == "present"
+  $is_absent    = $ensure == "absent"
+  $bin_dir      = '/usr/local/bin'
+  $sbin_dir     = '/usr/local/sbin'
+  $redis_home   = "/var/lib/redis"
+  $redis_log    = "/var/log/redis"
 
   class { "redis::overcommit":
     ensure => $ensure,
   }
 
   redis::install { $version:
-    ensure => $ensure,
-    bin_dir => $bin_dir,
+    ensure      => $ensure,
+    bin_dir     => $bin_dir,
     tar_version => $tar_version,
   }
 
   file { "/etc/redis":
-    ensure => $ensure ? {
-      'present' => "directory",
-      default => $ensure,
-    },
+    ensure => $ensure ? { 'present' => "directory", default => $ensure },
     force => $is_absent,
     before => $ensure ? {
       'present' => File["/etc/redis/redis.conf"],
-      default => undef,
+      default   => undef,
     },
     require => $ensure ? {
       'absent' => File["/etc/redis/redis.conf"],
-      default => undef,
+      default  => undef,
     },
   }
 
   file { "/etc/redis/redis.conf":
-    ensure => $ensure,
+    ensure  => $ensure,
     content => template("redis/redis.conf.erb"),
     require => Redis::Install[$version],
   }
 
   group { "redis":
-    ensure => $ensure,
+    ensure    => $ensure,
     allowdupe => false,
   }
 
   user { "redis":
-    ensure => $ensure,
-    allowdupe => false,
-    home => $redis_home,
-    managehome => true,
-    gid => "redis",
-    shell => "/bin/false",
-    comment => "Redis Server",
-    require => $ensure ? {
+    ensure      => $ensure,
+    allowdupe   => false,
+    home        => $redis_home,
+    managehome  => true,
+    gid         => "redis",
+    shell       => "/bin/false",
+    comment     => "Redis Server",
+    require     => $ensure ? {
       'present' => Group["redis"],
-      default => undef,
+      default   => undef,
     },
     before => $ensure ? {
       'absent' => Group["redis"],
-      default => undef,
+      default  => undef,
     },
   }
 
   file { [$redis_home, $redis_log]:
     ensure => $ensure ? {
       'present' => directory,
-      default => $ensure,
+      default   => $ensure,
     },
     owner => $ensure ? {
       'present' => "redis",
-      default => undef,
+      default   => undef,
     },
     group => $ensure ? {
       'present' => "redis",
-      default => undef,
+      default   => undef,
     },
     require => $ensure ? {
       'present' => Group["redis"],
-      default => undef,
+      default   => undef,
     },
     before => $ensure ? {
       'absent' => Group["redis"],
-      default => undef,
+      default  => undef,
     },
     force => $is_absent,
   }
@@ -99,7 +97,7 @@ class redis::server($ensure=present,
   file { "/etc/init.d/redis-server":
     ensure => $ensure,
     source => "puppet:///modules/redis/redis-server.init",
-    mode => 744,
+    mode   => 0744,
   }
 
   file { "/etc/logrotate.d/redis-server":
@@ -108,24 +106,24 @@ class redis::server($ensure=present,
   }
 
   service { "redis-server":
-    ensure => $is_present,
-    enable => $is_present,
-    pattern => "${bin_dir}/redis-server",
-    hasrestart => true,
-    subscribe => $ensure ? {
+    ensure      => $is_present,
+    enable      => $is_present,
+    pattern     => "${sbin_dir}/redis-server",
+    hasrestart  => true,
+    subscribe   => $ensure ? {
       'present' => [File["/etc/init.d/redis-server"],
                     File["/etc/redis/redis.conf"],
                     Redis::Install[$version],
                     Class["redis::overcommit"]],
-      default => undef,
+      default   => undef,
     },
     require => $ensure ? {
       'present' => [File[$redis_log], User["redis"], File["/etc/init.d/redis-server"]],
-      default => undef,
+      default   => undef,
     },
     before => $ensure ? {
       'absent' => [User["redis"], File["/etc/init.d/redis-server"]],
-      default => undef,
+      default  => undef,
     },
   }
 }

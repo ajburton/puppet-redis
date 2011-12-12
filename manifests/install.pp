@@ -1,4 +1,4 @@
-define redis::install($ensure=present, $bin_dir="", $tar_version=undef) {
+define redis::install($ensure=present, $bin_dir="", $sbin_dir="", $tar_version=undef) {
   include redis::dependencies
 
   $version = $name
@@ -15,7 +15,7 @@ define redis::install($ensure=present, $bin_dir="", $tar_version=undef) {
     }
 
     exec { "fetch redis ${version}": 
-      command => "curl -sL https://github.com/antirez/redis/tarball/${tar_version} | tar --strip-components 1 -xz",
+      command => "curl -sL http://redis.googlecode.com/files/redis-${tar_version}.tar.gz | tar --strip-components 1 -xz",
       cwd => $redis_src,
       creates => "${redis_src}/Makefile",
       require => File[$redis_src],
@@ -41,7 +41,7 @@ define redis::install($ensure=present, $bin_dir="", $tar_version=undef) {
             "$bin_dir/redis-check-aof",
             "$bin_dir/redis-check-dump",
             "$bin_dir/redis-cli",
-            "$bin_dir/redis-server"]:
+            "$sbin_dir/redis-server"]:
       ensure => $ensure,
     }
   }

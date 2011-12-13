@@ -11,6 +11,8 @@ class redis::server($ensure=present,
                     $aof_auto_rewrite_percentage=100,
                     $aof_auto_rewrite_min_size="64mb") {
 
+  include redis::params
+
   $is_present   = $ensure == "present"
   $is_absent    = $ensure == "absent"
   $bin_dir      = '/usr/local/bin'
@@ -96,8 +98,8 @@ class redis::server($ensure=present,
 
   file { "/etc/init.d/redis-server":
     ensure => $ensure,
-    source => "puppet:///modules/redis/redis-server.init",
     mode   => 0744,
+    source => $redis::params::server_init
   }
 
   file { "/etc/logrotate.d/redis-server":

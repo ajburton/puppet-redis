@@ -8,7 +8,7 @@ class redis::overcommit($ensure=present) {
   if $ensure == "present" {
     exec { "overcommit-memory":
       command => "sysctl vm.overcommit_memory=1",
-      unless => "test `sysctl -n vm.overcommit_memory` = 1",
+      onlyif => "test `/sbin/sysctl -n vm.overcommit_memory` -eq 0"
     }
   }
 }
